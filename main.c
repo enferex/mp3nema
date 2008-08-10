@@ -27,8 +27,15 @@
 
 void usage(void)
 {
-    printf("-- MP3nema -- v. " VERSION " --\n"
-           "A MP3 analysis, data capturing, and data hiding utility\n");
+    printf(NAME " Copyright (C) 2008 Matt Davis\n"
+           "(enferex) of 757Labs (www.757labs.com)\n"
+           "This program comes with ABSOLUTELY NO WARRANTY\n"
+           "This is free software, and you are welcome to redistribute it\n"
+           "under certain conditions.  For details see the file 'LICENSE'\n"
+           "that came with this software or visit:\n"
+           "<http://www.gnu.org/licenses/gpl-3.0.txt>\n\n"
+           "-- MP3nema v" VERSION " --\n"
+           "An MP3 analysis, data capturing, and data hiding utility\n");
 
     printf("Usage: ./mp3nema <source.mp3 | stream> [[-e] | [-i file]]\n"
            "\t-c Capture audio from network stream\n"

@@ -30,12 +30,12 @@
 
 
 /* Terminal Display Name */
-#define TAG "[mp3nema]"
+#define NAME "mp3nema"
+#define TAG  "[" NAME "]"
 
 /* Version */
-#define _MAJOR 0
-#define _MINOR 1
-#define VERSION ##_MAJOR"."_##MINOR
+#define _VER(_major, _minor) #_major"."#_minor
+#define VERSION _VER(0, 1) /* Major, Minor */
 
 /* Main argument flags */
 #define FLAG_INSERT_MODE  1

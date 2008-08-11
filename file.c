@@ -67,8 +67,8 @@ void handle_as_file(
         }
     }
 
-    printf("Frames: %d\n", n_frames);
-    printf("ID3v2 Tags: %d\n", n_tags);
+    printf(TAG " Frames: %d\n", n_frames);
+    printf(TAG " ID3v2 Tags: %d\n", n_tags);
 
     /* Clean */
     if (oob_file)

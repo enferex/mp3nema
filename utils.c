@@ -86,8 +86,10 @@ FILE *util_create_file(
 
     /* Avoid overwriting an existig file by appening a number to the name */
     fileno = 0;
+    outname = NULL;
     do 
     {
+        free(outname);
         outname = calloc(1, strlen(c) + 64);
         strncpy(outname, c, strrchr(c, '.') - c);
         if (fileno > 0)

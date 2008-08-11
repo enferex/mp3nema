@@ -22,11 +22,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <dirent.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "main.h"
 #include "utils.h"
+
+
+/* Destinations (MP3 files that the inject data is spanned across/into) */
+typedef struct _data_dest_t data_dest_t;
+struct _data_dest_t {char *fname; size_t size; int frames;};
 
 
 static int count_frames(FILE *dst)
@@ -124,14 +131,148 @@ static void inject(FILE *dst, FILE *src, FILE *out, int bytes)
 }
 
 
+/* Add a data destination object to the array given at index given */
+static void add_dest(
+    data_dest_t *dests,
+    int          idx,
+    const char  *fpath,
+    const char  *fname)
+{
+    int            n_frames;
+    struct stat    st;
+    FILE          *dst;
+    mp3_frame_t   *frame;
+    id3_tag_t     *tag;
+    STREAM_OBJECT  type;
+
+    dests[idx].fname = malloc(1 + strlen(fname) + ((fpath)?strlen(fpath) : 0));
+    if (!fpath)
+      sprintf(dests[idx].fname, "%s", fname);
+    else
+      sprintf(dests[idx].fname, "%s/%s", fpath, fname);
+
+    stat(dests[idx].fname, &st);
+    dests[idx].size = st.st_size;
+
+    if (!(dst = fopen(dests[idx].fname, "r")))
+    {
+        dests[idx].frames = 0;
+        ERR("Could not open destination mp3 to obtain frame count");
+        return;
+    }
+
+    /* Count frames */
+    n_frames = 0;
+    while ((type = next_mp3_frame_or_id3v2(dst, NULL, 0, 0, NULL, NULL)))
+    {
+        switch (type)
+        {
+            case STREAM_OBJECT_MP3_FRAME:
+                frame = mp3_get_frame(dst);
+                mp3_free_frame(frame);
+                ++n_frames;
+                break;
+
+            case STREAM_OBJECT_ID3V2_TAG:
+                tag = id3_get_tag(dst);
+                free(tag);
+                break;
+
+            default: break;
+        }
+    }
+
+    fclose(dst);
+    dests[idx].frames = n_frames;
+}
+
+
+/* Returns an array of data destinations (mp3 files) that the source data is to
+ * be injected into.
+ */
+static data_dest_t *load_data_dests(const char *f_or_dir_name, int *n_dests)
+{
+    int            n_files;
+    DIR           *dir;
+    FILE          *dst;
+    data_dest_t   *dests;
+    struct dirent *entry;
+    struct stat    st;
+     
+    dests = NULL;
+    stat(f_or_dir_name, &st);
+
+    if (n_dests)
+      *n_dests = 0;
+
+    /* Directory or single file */
+    if (S_ISDIR(st.st_mode))
+    {
+        /* Count number of MP3 files */
+        if (!(dir = opendir(f_or_dir_name)))
+        {
+            ERR("Could not open directory of mp3 files to inject data into");
+            return NULL;
+        }
+
+        /* Assumes, by extension and not file data */
+        n_files = 0;
+        while ((entry = readdir(dir)))
+          if (strstr(entry->d_name, ".mp3"))
+            ++n_files;
+
+        /* Load */
+        dests = malloc(sizeof(data_dest_t) * n_files);
+        n_files = 0;
+        rewinddir(dir);
+        while ((entry = readdir(dir)))
+          if (strstr(entry->d_name, ".mp3"))
+            add_dest(dests, n_files++, f_or_dir_name, entry->d_name);
+
+        closedir(dir);
+    }
+    else /* Treat as a single file */
+    {
+        if (!(dst = fopen(f_or_dir_name, "r")))
+        {
+            ERR("Could not open mp3 to inject data into");
+            return NULL;
+        }
+
+        dests = malloc(sizeof(data_dest_t));
+        add_dest(dests, 0, NULL, f_or_dir_name);
+        n_files = 1;
+        fclose(dst);
+    }
+
+    if (n_dests)
+      *n_dests = n_files;
+
+    return dests;
+}
+
+
+static void free_dests(data_dest_t *dests, int n_dests)
+{
+    int i;
+
+    for (i=0; i<n_dests; i++)
+      free(dests[i].fname);
+    free(dests);
+}
+
+
 void handle_as_insert(
     const char *f_or_dir_name,
     flags_t     flags,
     const char *datasrc)
 {
+    int          i, n_dests, err;
+    char         dest_modifier[16];
     size_t       src_sz;
-    FILE        *dst, *src, *out;
+    FILE         *dest, *src, *out;
     struct stat  st;
+    data_dest_t *dests;
 
     /* Where we pull data to insert into */
     if (!(src = fopen(datasrc, "r")))
@@ -140,28 +281,39 @@ void handle_as_insert(
         return;
     }
 
-    /* Treat as a single file */
-    if (!(dst = fopen(f_or_dir_name, "r")))
-    {
-        ERR("Could not open mp3 to inject data into");
-        return;
-    }
-
-    out = util_create_file(f_or_dir_name, "injected", "mp3");
-    
-    /* Size */
+    /* Single file or directory? */
+    if (!(dests = load_data_dests(f_or_dir_name, &n_dests)))
+      return;
+        
+    /* Amount  of data to inject */
     stat(datasrc, &st);
     src_sz = st.st_size;
-
-    /* Insert info between frame skipping two frames so data
-     * is not always in the first frame.
-     */
     fseek(src, 0, SEEK_SET);
-    fseek(dst, 0, SEEK_SET);
-    inject(dst, src, out, src_sz);
+
+    /* For each file we are to span accross */
+    err = 0;
+    for (i=0; i<n_dests; i++)
+    {
+        snprintf(dest_modifier, sizeof(dest_modifier), "injected-%d", i+1); 
+        out = util_create_file(f_or_dir_name, dest_modifier, "mp3");
+        
+        /* Insert info between frame skipping two frames so data
+         * is not always in the first frame.
+         */
+        if (!(dest = fopen(dests[i].fname, "r")))
+        {
+            ++err;
+            continue;
+        }
+
+        fseek(dest, 0, SEEK_SET);
+        inject(dest, src, out, src_sz / (n_dests-err));
+
+        fclose(dest);
+        fclose(out);
+    }
 
     /* Clean */
+    free_dests(dests, n_dests);
     fclose(src);
-    fclose(dst);
-    fclose(out);
 }

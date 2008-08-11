@@ -41,6 +41,7 @@
 #define FLAG_INSERT_MODE  1
 #define FLAG_CAPTURE_MODE 2
 #define FLAG_EXTRACT_MODE 4
+#define FLAG_QUIET_MODE   8
 typedef unsigned short int flags_t;
 
 /* Error Reporting */

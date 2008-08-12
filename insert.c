@@ -69,13 +69,14 @@ static int count_frames(FILE *dst)
 
 static void inject(FILE *dst, FILE *src, FILE *out, int bytes)
 {
-    int            i, n_frames, n_blocks, block_sz;
+    int            i, n_frames, n_blocks, block_sz, remainder_sz;
     long           start, end;
     unsigned char *buf, *block;
     id3_tag_t     *tag;
     mp3_frame_t   *frame;
 
     /* Chunks of data to break src into */
+    remainder_sz = 0;
     n_frames = count_frames(dst);
     n_blocks = bytes / (n_frames - 1);
     if ((n_blocks == 0) || ((block_sz = bytes / n_blocks) == 0))
@@ -83,6 +84,8 @@ static void inject(FILE *dst, FILE *src, FILE *out, int bytes)
         n_blocks = 1;
         block_sz = bytes;
     }
+    else
+      remainder_sz = bytes % n_blocks;
 
     fseek(dst, 0, SEEK_SET);
     buf = NULL;
@@ -120,6 +123,10 @@ static void inject(FILE *dst, FILE *src, FILE *out, int bytes)
         /* Add in data (ignoreing the first 'i' frames) */
         if (i > 15 && n_blocks)
         {
+            /* Add in remainder data if odd size */
+            if ((n_blocks - 1) == 0)
+              block_sz += remainder_sz;
+
             fread(block, block_sz, 1, src);
             fwrite(block, block_sz, 1, out);
             --n_blocks;
@@ -145,7 +152,7 @@ static void add_dest(
     id3_tag_t     *tag;
     STREAM_OBJECT  type;
 
-    dests[idx].fname = malloc(1 + strlen(fname) + ((fpath)?strlen(fpath) : 0));
+    dests[idx].fname = malloc(2 + strlen(fname) + ((fpath)?strlen(fpath) : 0));
     if (!fpath)
       sprintf(dests[idx].fname, "%s", fname);
     else
@@ -269,7 +276,7 @@ void handle_as_insert(
 {
     int          i, n_dests, err;
     char         dest_modifier[16];
-    size_t       src_sz;
+    size_t       src_sz, sz;
     FILE         *dest, *src, *out;
     struct stat  st;
     data_dest_t *dests;
@@ -306,8 +313,13 @@ void handle_as_insert(
             continue;
         }
 
+        /* Last one? Add in remainder for odd sizes */
+        sz = src_sz / (n_dests - err);
+        if (i+1 == n_dests)
+          sz += src_sz % (n_dests - err);
+
         fseek(dest, 0, SEEK_SET);
-        inject(dest, src, out, src_sz / (n_dests-err));
+        inject(dest, src, out, sz);
 
         fclose(dest);
         fclose(out);

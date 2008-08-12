@@ -23,6 +23,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "utils.h"
 
 
@@ -73,16 +76,20 @@ FILE *util_create_file(
     const char *desc,
     const char *extension)
 {
-    int         fileno;
-    char       *outname;
-    const char *c;
-    FILE       *out;
+    int          fileno;
+    char        *outname;
+    const char  *c, *r;
+    FILE        *out;
+    struct stat  st;
 
     /* Create output file (in the working directory) */
-    if ((c = strrchr(fname, '/')))
+    if ((c = strrchr(fname, '/')) && strlen(c+1))
       ++c;
     else
       c = fname;
+
+    if ((stat(c, &st) == 0) && S_ISDIR(st.st_mode))
+      c = NAME;
 
     /* Avoid overwriting an existig file by appening a number to the name */
     fileno = 0;
@@ -91,7 +98,12 @@ FILE *util_create_file(
     {
         free(outname);
         outname = calloc(1, strlen(c) + 64);
-        strncpy(outname, c, strrchr(c, '.') - c);
+
+        if (!(r = strrchr(c, '.')))
+          r = c + strlen(c);
+    
+        strncpy(outname, c, r - c);
+
         if (fileno > 0)
           sprintf(outname, "%s-%s-%d.%s", outname, desc, fileno, extension);
         else

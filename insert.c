@@ -89,7 +89,7 @@ static void inject(FILE *dst, FILE *src, FILE *out, int bytes)
 
     fseek(dst, 0, SEEK_SET);
     buf = NULL;
-    block = malloc(block_sz);
+    block = malloc(block_sz + remainder_sz);
 
     for (i=0; i<n_frames; i++)
     {

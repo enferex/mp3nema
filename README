@@ -29,6 +29,12 @@ There are four main uses for mp3enema.
 2 - Extracting out of band data to a file.
 3 - Inserting data between frames.
 
+When inserting data between frames, the destination can be a single MP3 file,
+or a directory of MP3s.  To be more covert, larger files should probably be
+spanned across multiple MP3s.  In such a case a directory of MP3 files can be
+specified.  The resulting files, with the injected data, will be numbered so
+that they can be extracted in proper order.
+
 The help menu, when running mp3nema without any arguments, designates how to
 operate in one of the aforementioned modes.
 

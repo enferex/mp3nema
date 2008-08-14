@@ -37,15 +37,20 @@
 #define _VER(_major, _minor) #_major"."#_minor
 #define VERSION _VER(0, 1) /* Major, Minor */
 
-/* Main argument flags */
+/* Main Argument Flags */
 #define FLAG_INSERT_MODE  1
 #define FLAG_CAPTURE_MODE 2
 #define FLAG_EXTRACT_MODE 4
-#define FLAG_QUIET_MODE   8
+#define FLAG_VERBOSE      8
 typedef unsigned short int flags_t;
+extern flags_t main_flags;
 
 /* Error Reporting */
 #define ERR(...) {fprintf(stderr, TAG "Error: " __VA_ARGS__);}
+
+/* Verbose */
+#define IS_VERBOSE (main_flags & FLAG_VERBOSE)
+#define VERBOSE(...) {if (IS_VERBOSE) {printf(__VA_ARGS__);}}
 
 /* For array allocation */
 #define DEFAULT_BLK_SZ 512 /* Bytes */

@@ -25,6 +25,9 @@
 #include "main.h"
 
 
+flags_t main_flags = 0;
+
+
 void usage(void)
 {
     printf(NAME " Copyright (C) 2008 Matt Davis\n"
@@ -41,7 +44,7 @@ void usage(void)
            "\t-c Capture audio from network stream\n"
            "\t-i <file> Inject data from 'file' into the mp3 between frames\n"
            "\t-e Extract out of band data to a file\n"
-           "\t-q Avoid displaying out of frame data\n");
+           "\t-v Display more information (out-of-frame data)\n");
 
     _Exit(0);
 }
@@ -65,9 +68,8 @@ int main(
     int    argc,
     char **argv)
 {
-    int      i;
-    char    *datasrc, *fname;
-    flags_t  flags;
+    int   i;
+    char *datasrc, *fname;
 
     if (argc < 2)
       usage();
@@ -75,7 +77,6 @@ int main(
     fname = datasrc = NULL;
 
     /* Args */
-    flags = 0;
     for (i=1; i<argc; i++)
     {
         /* Insert */
@@ -84,7 +85,7 @@ int main(
             if (i+1<argc && argv[i+1][0] != '-')
             {
                 datasrc = argv[++i];
-                flags |= FLAG_INSERT_MODE;
+                main_flags |= FLAG_INSERT_MODE;
             }
             else
               usage();
@@ -92,15 +93,15 @@ int main(
 
         /* Extract to file */
         else if (strncmp(argv[i], "-e", 2) == 0)
-          flags |= FLAG_EXTRACT_MODE;
+          main_flags |= FLAG_EXTRACT_MODE;
 
         /* Capture Stream */
         else if (strncmp(argv[i], "-c", 2) == 0)
-          flags |= FLAG_CAPTURE_MODE;
+          main_flags |= FLAG_CAPTURE_MODE;
 
-        /* Shaddup! */
-        else if (strncmp(argv[i], "-q", 2) == 0)
-          flags |= FLAG_QUIET_MODE;
+        /* Speak up! */
+        else if (strncmp(argv[i], "-v", 2) == 0)
+          main_flags |= FLAG_VERBOSE;
 
         /* Source file or stream */
         else if (argv[i][0] != '-')
@@ -110,12 +111,12 @@ int main(
     if (!fname)
       usage();
 
-    if (flags & FLAG_INSERT_MODE)
-      handle_as_insert(fname, flags, datasrc);
+    if (main_flags & FLAG_INSERT_MODE)
+      handle_as_insert(fname, main_flags, datasrc);
     else if (is_file(fname))
-      handle_as_file(fname, flags);
+      handle_as_file(fname, main_flags);
     else
-      handle_as_stream(fname, flags);
+      handle_as_stream(fname, main_flags);
     
     return 0;
 }

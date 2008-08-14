@@ -188,7 +188,8 @@ int mp3_frame_length(const mp3_frame_t *frame)
 
 
 /* Pass either data block or file handle
- * If both are passed, the file handle takes presecendence
+ * If both are passed, the file handle takes presecendence.
+ * Lots of parameters
  */
 STREAM_OBJECT next_mp3_frame_or_id3v2(
     FILE       *fp,
@@ -274,14 +275,16 @@ STREAM_OBJECT next_mp3_frame_or_id3v2(
     }
 
     /* Display OOB data */
-    if (oob_size && !ignore_oob)
+    if (oob_size && !ignore_oob && IS_VERBOSE)
     {
-        printf("--OOB Data Found: %d bytes--\n", oob_size);
+        VERBOSE("--OOB Data Found: %d bytes--\n", oob_size);
         for (i=0; i<oob_size; i++)
-          printf("0x%.2x(%c) ", oob[i], 
+          VERBOSE("0x%.2x(%c) ", oob[i], 
                  (oob[i] > 31 && oob[i]<127) ? oob[i] : ' ');
-        printf("\n----------------------------\n\n");
+        VERBOSE("\n----------------------------\n\n");
     }
+    else if (oob_size && !IS_VERBOSE)
+      printf(TAG " %d bytes out-of-frame\n", oob_size);
 
     /* Write OOB data to file */
     if (oob_size && !ignore_oob && oob_to_file)

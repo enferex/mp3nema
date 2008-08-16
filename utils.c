@@ -72,7 +72,8 @@ void util_url_to_host_port_file(const char *url, hostdata_t *hostdata)
 FILE *util_create_file(
     const char *fname,
     const char *desc,
-    const char *extension)
+    const char *extension,
+    int         is_stream)
 {
     int          fileno;
     char        *outname;
@@ -97,7 +98,7 @@ FILE *util_create_file(
         free(outname);
         outname = calloc(1, strlen(c) + 64);
 
-        if (!(r = strrchr(c, '.')))
+        if (is_stream || !(r = strrchr(c, '.')))
           r = c + strlen(c);
     
         strncpy(outname, c, r - c);

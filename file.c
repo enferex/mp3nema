@@ -38,7 +38,7 @@ void handle_as_file(const char *fname, flags_t flags)
 
     oob_file = NULL;
     if (flags & FLAG_EXTRACT_MODE)
-      if (!(oob_file = util_create_file(fname, "extracted-oob", "dat")))
+      if (!(oob_file = util_create_file(fname, "extracted-oob", "dat", 0)))
         ERR("Could not create a file to store out of band data\n"
             "Normal analysis will still occur.\n");
     

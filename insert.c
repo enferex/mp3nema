@@ -302,7 +302,7 @@ void handle_as_insert(
     for (i=0; i<n_dests; i++)
     {
         snprintf(dest_modifier, sizeof(dest_modifier), "injected-%d", i+1); 
-        out = util_create_file(f_or_dir_name, dest_modifier, "mp3");
+        out = util_create_file(f_or_dir_name, dest_modifier, "mp3", 0);
         
         /* Insert info between frame skipping two frames so data
          * is not always in the first frame.

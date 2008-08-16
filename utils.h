@@ -44,13 +44,15 @@ extern void util_url_to_host_port_file(const char *url, hostdata_t *hostdata);
 
 
 /* Returns a file pointer to a newly created file, in the current working
- * directory, with the description inserted in the name.  This file also has a
- * timestamp appended to avoid duplicate name conflicts. 
+ * directory, with the description inserted in the name.  If this is a 
+ * stream, assume 'fname' is a URL/host, so avoid lopping off an extension,
+ * because that would probably be part of the address.
  */
 extern FILE *util_create_file(
     const char *fname,
     const char *desc,
-    const char *extension);
+    const char *extension,
+    int         is_stream);
 
 
 /* Searches the file stream or data stream for the start of the next mp3 frame

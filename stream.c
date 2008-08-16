@@ -105,7 +105,7 @@ static void suck_data_from_stream(
     /* If we want to store oob data */ 
     oob_file = NULL;
     if (flags & FLAG_EXTRACT_MODE)
-      oob_file = util_create_file(host, "extracted-oob", "dat");
+      oob_file = util_create_file(host, "extracted-oob", "dat", 0);
 
     /* Grab data from stream (don't analyize first chunk) */
     ignore_oob = 1;
@@ -306,7 +306,7 @@ static int get_stream_info(flags_t flags, int sd, const hostdata_t *host)
 
     /* Create file to capture stream to */
     if ((flags & FLAG_CAPTURE_MODE) &&
-        (!(fp = util_create_file(host->host, "captured-stream", "mp3"))))
+        (!(fp = util_create_file(host->host, "captured-stream", "mp3", 1))))
       return 0;
 
     /* Pull data from stream and analyize */

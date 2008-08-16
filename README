@@ -33,7 +33,14 @@ When inserting data between frames, the destination can be a single MP3 file,
 or a directory of MP3s.  To be more covert, larger files should probably be
 spanned across multiple MP3s.  In such a case a directory of MP3 files can be
 specified.  The resulting files, with the injected data, will be numbered so
-that they can be extracted in proper order.
+that they can be extracted in proper order. 
+
+It is suggested that an ASCII-based encoding (e.g. uuencode) be used to encode
+the data that is to be stashed between frames.  This avoids the possibility of
+replicating an MP3 sync-frame, which would signify the potential start of audio
+data, and confuse the data-extraction process or audio-playback.  Likewise, the
+case of an ASCII character sequence of "ID3" in the data might also create
+confusion.
 
 The help menu, when running mp3nema without any arguments, designates how to
 operate in one of the aforementioned modes.

@@ -29,9 +29,7 @@
 #include "utils.h"
 
 
-void util_url_to_host_port_file(
-    const char *url,
-    hostdata_t *hostdata)
+void util_url_to_host_port_file(const char *url, hostdata_t *hostdata)
 {
     char *c;
 
@@ -123,75 +121,10 @@ FILE *util_create_file(
 }
 
 
-void mp3_free_frame(mp3_frame_t *frame)
-{
-    if (!frame)
-      return;
-
-    free(frame->audio);
-    free(frame);
-}
-
-
-void mp3_write_frame(
-    FILE              *fp,
-    const mp3_frame_t *frame)
-{
-    fwrite(frame->header, frame->header_size, 1, fp); 
-    fwrite(frame->audio, frame->audio_size, 1, fp); 
-}
-
-
-/* Returns bytes not including frame header
- *
- * Great resource where this information was extracted from
- * http://mpgedit.org/mpgedit/mpeg_format/mpeghdr.htm
- *
- * This site mentions that padding is to be one slot.
- * http://www.codeproject.com/KB/audio-video/mpegaudioinfo.aspx#MPEGAudioFrame
- * In fact, I figured out why my header extraction was improper, after looking
- * at the way they compared their header (sync frame check)
- */
-int mp3_frame_length(const mp3_frame_t *frame)
-{
-    int bit_rate, sample_rate, value_idx;
-
-    /* Bit rate (from header to actual rate value) */
-    if ((frame->version == V2) &&
-        (((frame->layer == L2)) || (frame->layer == L3)))
-      value_idx = 4;
-    else if ((frame->version == V2) && (frame->layer == L1))
-      value_idx = 3;
-    else
-      value_idx  = frame->version - frame->layer;
-
-    if ((bit_rate = bitrate_table[frame->bitrate][value_idx] * 1000) < 0)
-      return 0;
-
-    /* Sample rate */
-    if (frame->version == V1)
-      value_idx = 0;
-    else if (frame->version == V2)
-      value_idx = 1;
-    else /* (version == V2_5) */
-      value_idx = 2;
-
-    if ((sample_rate = sample_rate_table[frame->samplerate][value_idx]) == 0)
-      return 0;
-    
-    /* Frame length (bytes) */
-    if (frame->layer == L1)
-      return ((12 * bit_rate / sample_rate + frame->padding) * 4);
-    else
-      return (144 * bit_rate / sample_rate + frame->padding);
-}
-
-
 /* Pass either data block or file handle
  * If both are passed, the file handle takes presecendence.
- * Lots of parameters
  */
-STREAM_OBJECT next_mp3_frame_or_id3v2(
+STREAM_OBJECT util_next_mp3_frame_or_id3v2(
     FILE       *fp,
     const char *data,
     int         data_sz,
@@ -300,28 +233,6 @@ STREAM_OBJECT next_mp3_frame_or_id3v2(
 }
 
 
-/* Sets the values for the fields in the header, leaves audio data NULL */
-void mp3_set_header(mp3_frame_t *frame, const char header[4])
-{
-    memcpy(frame->header, header, 4);
-    frame->version = MP3_HDR_VERSION(header);
-    frame->layer = MP3_HDR_LAYER(header);
-    frame->bitrate = MP3_HDR_BIT_RATE(header);
-    frame->samplerate = MP3_HDR_SAMPLE_RATE(header);
-    frame->padding = MP3_HDR_PADDING(header);
-    frame->crc = MP3_HDR_CRC(header);
-    
-    if (frame->crc)
-      frame->header_size = 6;
-    else
-      frame->header_size = 4;
-    
-    /* Set our fp to the beginning of the header */
-    frame->audio_size = mp3_frame_length(frame) - frame->header_size;
-    frame->audio = NULL;
-}
-
-
 mp3_frame_t *mp3_get_frame(FILE *fp)
 {
     char         header[6];
@@ -353,6 +264,92 @@ mp3_frame_t *mp3_get_frame(FILE *fp)
     fread(frame->audio, frame->audio_size, 1, fp);
 
     return frame;
+}
+
+
+void mp3_free_frame(mp3_frame_t *frame)
+{
+    if (!frame)
+      return;
+
+    free(frame->audio);
+    free(frame);
+}
+
+
+void mp3_write_frame(
+    FILE              *fp,
+    const mp3_frame_t *frame)
+{
+    fwrite(frame->header, frame->header_size, 1, fp); 
+    fwrite(frame->audio, frame->audio_size, 1, fp); 
+}
+
+
+/* Returns bytes not including frame header
+ *
+ * Great resource where this information was extracted from
+ * http://mpgedit.org/mpgedit/mpeg_format/mpeghdr.htm
+ *
+ * This site mentions that padding is to be one slot.
+ * http://www.codeproject.com/KB/audio-video/mpegaudioinfo.aspx#MPEGAudioFrame
+ * In fact, I figured out why my header extraction was improper, after looking
+ * at the way they compared their header (sync frame check)
+ */
+int mp3_frame_length(const mp3_frame_t *frame)
+{
+    int bit_rate, sample_rate, value_idx;
+
+    /* Bit rate (from header to actual rate value) */
+    if ((frame->version == V2) &&
+        (((frame->layer == L2)) || (frame->layer == L3)))
+      value_idx = 4;
+    else if ((frame->version == V2) && (frame->layer == L1))
+      value_idx = 3;
+    else
+      value_idx  = frame->version - frame->layer;
+
+    if ((bit_rate = bitrate_table[frame->bitrate][value_idx] * 1000) < 0)
+      return 0;
+
+    /* Sample rate */
+    if (frame->version == V1)
+      value_idx = 0;
+    else if (frame->version == V2)
+      value_idx = 1;
+    else /* (version == V2_5) */
+      value_idx = 2;
+
+    if ((sample_rate = sample_rate_table[frame->samplerate][value_idx]) == 0)
+      return 0;
+    
+    /* Frame length (bytes) */
+    if (frame->layer == L1)
+      return ((12 * bit_rate / sample_rate + frame->padding) * 4);
+    else
+      return (144 * bit_rate / sample_rate + frame->padding);
+}
+
+
+/* Sets the values for the fields in the header, leaves audio data NULL */
+void mp3_set_header(mp3_frame_t *frame, const char header[4])
+{
+    memcpy(frame->header, header, 4);
+    frame->version = MP3_HDR_VERSION(header);
+    frame->layer = MP3_HDR_LAYER(header);
+    frame->bitrate = MP3_HDR_BIT_RATE(header);
+    frame->samplerate = MP3_HDR_SAMPLE_RATE(header);
+    frame->padding = MP3_HDR_PADDING(header);
+    frame->crc = MP3_HDR_CRC(header);
+    
+    if (frame->crc)
+      frame->header_size = 6;
+    else
+      frame->header_size = 4;
+    
+    /* Set our fp to the beginning of the header */
+    frame->audio_size = mp3_frame_length(frame) - frame->header_size;
+    frame->audio = NULL;
 }
 
 
@@ -394,14 +391,6 @@ int mp3_is_valid_frame(FILE *fp, long start)
 }
 
 
-void id3_set_header(id3_tag_t *tag, const char header[10])
-{    
-    tag->size = ID3_HDR_SIZE(header);
-    tag->extended_header = ID3_HDR_EXTENDED(header); 
-    tag->footer = ID3_HDR_FOOTER(header);
-}
-
-
 id3_tag_t *id3_get_tag(FILE *fp)
 {
     id3_tag_t *tag;
@@ -415,4 +404,12 @@ id3_tag_t *id3_get_tag(FILE *fp)
     fseek(fp, tag->size, SEEK_CUR);
 
     return tag;
+}
+
+
+void id3_set_header(id3_tag_t *tag, const char header[10])
+{    
+    tag->size = ID3_HDR_SIZE(header);
+    tag->extended_header = ID3_HDR_EXTENDED(header); 
+    tag->footer = ID3_HDR_FOOTER(header);
 }

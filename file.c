@@ -25,14 +25,12 @@
 #include "utils.h"
 
 
-void handle_as_file(
-    const char *fname,
-    flags_t     flags)
+void handle_as_file(const char *fname, flags_t flags)
 {
     int            n_frames, n_tags;
     FILE          *fp, *oob_file;
     mp3_frame_t   *frame;
-    id3_tag_t      *tag;
+    id3_tag_t     *tag;
     STREAM_OBJECT  type;
 
     if (!(fp = fopen(fname, "rb")))
@@ -46,7 +44,7 @@ void handle_as_file(
     
     n_frames = n_tags = 0;
 
-    while ((type = next_mp3_frame_or_id3v2(fp, NULL, 0, 0, NULL, oob_file)))
+    while ((type = util_next_mp3_frame_or_id3v2(fp, NULL, 0, 0,NULL,oob_file)))
     {
         switch (type)
         {

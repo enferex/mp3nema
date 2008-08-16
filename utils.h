@@ -53,12 +53,26 @@ extern FILE *util_create_file(
     const char *extension);
 
 
+/* Searches the file stream or data stream for the start of the next mp3 frame
+ * or id3v2 tag.  If a data stream is searched, and index into that stream is
+ * returned where the frame or tag begins.
+ * If 'oob_to_file' is specified, the OOB data is written here.
+ */
+extern STREAM_OBJECT util_next_mp3_frame_or_id3v2(
+    FILE       *fp,
+    const char *data,
+    int         data_sz,
+    int         ignore_oob,
+    int        *frame_or_tag_index,
+    FILE       *oob_to_file);
+
+
 /* MP3 Frames */
-extern void mp3_free_frame(mp3_frame_t *frame);
 extern mp3_frame_t *mp3_get_frame(FILE *fp);
-extern void mp3_set_header(mp3_frame_t *frame, const char header[4]);
-extern int mp3_frame_length(const mp3_frame_t *frame);
+extern void mp3_free_frame(mp3_frame_t *frame);
 extern void mp3_write_frame(FILE *fp, const mp3_frame_t *frame);
+extern int mp3_frame_length(const mp3_frame_t *frame);
+extern void mp3_set_header(mp3_frame_t *frame, const char header[4]);
 extern int mp3_is_valid_header(const mp3_frame_t *frame);
 extern int mp3_is_valid_frame(FILE *fp, long start);
 
@@ -66,20 +80,6 @@ extern int mp3_is_valid_frame(FILE *fp, long start);
 /* ID3 Tags */
 extern id3_tag_t *id3_get_tag(FILE *fp);
 extern void id3_set_header(id3_tag_t *tag, const char header[10]);
-
-
-/* Searches the file stream or data stream for the start of the next mp3 frame
- * or id3v2 tag.  If a data stream is searched, and index into that stream is
- * returned where the frame or tag begins.
- * If 'oob_to_file' is specified, the OOB data is written here.
- */
-extern STREAM_OBJECT next_mp3_frame_or_id3v2(
-    FILE       *fp,
-    const char *data,
-    int         data_sz,
-    int         ignore_oob,
-    int        *frame_or_tag_index,
-    FILE       *oob_to_file);
 
 
 #endif /* UTILS_H_INCLUDE */

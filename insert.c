@@ -44,7 +44,7 @@ static int count_frames(FILE *dst)
     STREAM_OBJECT  type;
 
     n_frames = 0;
-    while ((type = next_mp3_frame_or_id3v2(dst, NULL, 0, 0, NULL, NULL)))
+    while ((type = util_next_mp3_frame_or_id3v2(dst, NULL, 0, 0, NULL, NULL)))
     {
         switch (type)
         {
@@ -78,7 +78,7 @@ static void inject(FILE *dst, FILE *src, FILE *out, int bytes)
     /* Chunks of data to break src into */
     remainder_sz = 0;
     n_frames = count_frames(dst);
-    n_blocks = bytes / (n_frames - 1);
+    n_blocks = bytes / (n_frames - FRAMES_TO_IGNORE);
     if ((n_blocks == 0) || ((block_sz = bytes / n_blocks) == 0))
     {
         n_blocks = 1;
@@ -95,7 +95,7 @@ static void inject(FILE *dst, FILE *src, FILE *out, int bytes)
     {
         /* Start/end read points to copy frame/tag */
         start = ftell(dst);
-        switch (next_mp3_frame_or_id3v2(dst, NULL, 0, 0, NULL, NULL))
+        switch (util_next_mp3_frame_or_id3v2(dst, NULL, 0, 0, NULL, NULL))
         {
             case STREAM_OBJECT_MP3_FRAME:
                 frame = mp3_get_frame(dst);
@@ -120,8 +120,8 @@ static void inject(FILE *dst, FILE *src, FILE *out, int bytes)
         fseek(dst, end, SEEK_SET);
         fwrite(buf, end - start, 1, out);
 
-        /* Add in data (ignoreing the first 'i' frames) */
-        if (i > 15 && n_blocks)
+        /* Add in data (ignoring the first 'i' frames) */
+        if (i > FRAMES_TO_IGNORE && n_blocks)
         {
             /* Add in remainder data if odd size */
             if ((n_blocks - 1) == 0)
@@ -170,7 +170,7 @@ static void add_dest(
 
     /* Count frames */
     n_frames = 0;
-    while ((type = next_mp3_frame_or_id3v2(dst, NULL, 0, 0, NULL, NULL)))
+    while ((type = util_next_mp3_frame_or_id3v2(dst, NULL, 0, 0, NULL, NULL)))
     {
         switch (type)
         {

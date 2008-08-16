@@ -25,12 +25,40 @@
 #include <string.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "main.h"
 #include "utils.h"
+
+
+/* Globals so we can gracefully exit */
+static FILE             *insert_fp = NULL;   /* File   */
+static const int        *insert_sd = NULL;   /* Socket */
+static const hostdata_t *insert_host = NULL; /* Host   */
+
+
+/* Gracefully exit if the user kills us */
+static void signal_handler(int signum)
+{
+    if (insert_fp)
+      fclose(insert_fp);
+    if (insert_sd)
+      close(*insert_sd);
+    if (insert_host)
+    {
+        free(insert_host->file);
+        free(insert_host->host);
+        free(insert_host->port);
+    }
+    
+    printf("\n" TAG " session gracefully terminated\n");
+    fflush(stdout);
+
+    _Exit(0);
+}
 
 
 static int connect_host(const char *host, int port)
@@ -64,7 +92,7 @@ static void suck_data_from_stream(
     flags_t     flags,
     const char *host)
 {
-    static const int  brain_sz = DEFAULT_BLK_SZ * 4;
+    static const int brain_sz = DEFAULT_BLK_SZ * 4;
 
     int            ignore_oob, index;
     int            recv_sz, curr_brain_sz, frame_length;
@@ -90,8 +118,9 @@ static void suck_data_from_stream(
         {
             while ( 1 )
             {
-                type = next_mp3_frame_or_id3v2(NULL, brain, curr_brain_sz,
-                                               ignore_oob, &index, oob_file);
+                type = util_next_mp3_frame_or_id3v2(NULL, brain, curr_brain_sz,
+                                                    ignore_oob, &index,
+                                                    oob_file);
 
                 /* At the end if UNKNOWN or our length does not match 
                  * amount in buffer * continue gathering 
@@ -109,7 +138,6 @@ static void suck_data_from_stream(
 #ifdef DEBUG
                      printf("frame: %d\n", frame_length);
 #endif
-
                    /* Gather more data */
                    if (frame_length >= curr_brain_sz)
                        break;
@@ -176,14 +204,9 @@ static void suck_data_from_stream(
 }
 
 
-static int get_stream_info(
-    flags_t     flags,
-    int         sd, 
-    const char *host,
-    const char *port,
-    const char *file)
+static int get_stream_info(flags_t flags, int sd, const hostdata_t *host)
 {
-    static const int  buf_blk_sz = DEFAULT_BLK_SZ;
+    static const int buf_blk_sz = DEFAULT_BLK_SZ;
 
     int         total_sz, recv_sz, n_buf_blks;
     char       *buf, *c, query[DEFAULT_BLK_SZ];
@@ -193,7 +216,7 @@ static int get_stream_info(
 
     snprintf(query, sizeof(query), 
              "GET %s HTTP/1.0\r\nHost: %s:%s\r\n\r\n",
-             file, host, port);
+             host->file, host->host, host->port);
 
 #ifdef DEBUG
         printf("query: %s", query);
@@ -219,7 +242,10 @@ static int get_stream_info(
 
     /* Get the potential new host from the just read in data */
     if (buf && !(c = strstr(buf, "http://")))
-      return 0;
+    {
+        free(buf);
+        return 0;
+    }
     else if (buf)
     {
         strtok(c, "\n");
@@ -227,6 +253,7 @@ static int get_stream_info(
     }
 
     /* Disconnect here and contact server in m3u/pls */
+    free(buf);
     close(sd);
     if (!(sd = connect_host(newhost.host, newhost.portnum)))
       return 0;
@@ -239,20 +266,25 @@ static int get_stream_info(
 #ifdef DEBUG
         printf("query: %s", query);
 #endif
-        
+
+    free(newhost.file);
+    free(newhost.host);
+    free(newhost.port);
+
+    /* Query */
     if (write(sd, query, strlen(query)) < 1)
       return 0;
 
     /* Create file to capture stream to */
     if ((flags & FLAG_CAPTURE_MODE) &&
-        (!(fp = util_create_file(host, "captured-stream", "mp3"))))
+        (!(fp = util_create_file(host->host, "captured-stream", "mp3"))))
       return 0;
 
     /* Pull data from stream and analyize */
-    suck_data_from_stream(sd, fp, flags, host);
+    insert_host = host;
+    insert_fp = fp;
+    suck_data_from_stream(sd, fp, flags, host->host);
 
-    /* Clean */
-    free(buf);
     if (fp)
       fclose(fp);
 
@@ -260,9 +292,7 @@ static int get_stream_info(
 }
 
 
-void handle_as_stream(
-    const char *url,
-    flags_t     flags)
+void handle_as_stream(const char *url, flags_t flags)
 {
     int        sd;
     hostdata_t host;
@@ -272,7 +302,11 @@ void handle_as_stream(
     if (!(sd = connect_host(host.host, host.portnum)))
       return;
 
-    if (!(get_stream_info(flags, sd, host.host, host.port, host.file)))
+    /* Gracefully quit */
+    insert_sd = &sd;
+    signal(SIGINT, signal_handler);
+
+    if (!(get_stream_info(flags, sd, &host)))
       return;
 
     /* Disconnect */

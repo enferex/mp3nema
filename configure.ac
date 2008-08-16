@@ -21,6 +21,7 @@ AC_TYPE_SIZE_T
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_FUNC_STAT
+AC_TYPE_SIGNAL
 AC_FUNC_CLOSEDIR_VOID
 AC_CHECK_FUNCS([gethostbyname memmove memset mkdir \
                 socket strchr strdup strstr strrchr])

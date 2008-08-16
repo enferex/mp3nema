@@ -58,6 +58,9 @@ extern flags_t main_flags;
 /* Out of Band data (OOB) what we are looking for */
 #define OOB_BLK_SIZE DEFAULT_BLK_SZ
 
+/* Number of initial mp3 frames to ignore when injecting mp3 with data */
+#define FRAMES_TO_IGNORE 15
+
 
 typedef struct _mp3_frame_t
 {
@@ -75,13 +78,12 @@ typedef struct _mp3_frame_t
 
 
 /* What we have found in the mp3 */
-typedef enum _stream_thang STREAM_OBJECT;
-enum _stream_thang
+typedef enum _stream_thang
 {
     STREAM_OBJECT_UNKNOWN,   /* Error */
     STREAM_OBJECT_MP3_FRAME,
     STREAM_OBJECT_ID3V2_TAG
-};
+} STREAM_OBJECT;
 
 
 /* MP3 Version */
@@ -101,6 +103,7 @@ enum _stream_thang
 #define MP3_HDR_PADDING(_h)     ((_h[2] & 0x02) >> 1)
 #define MP3_HDR_BIT_RATE(_h)    ((_h[2] & 0xF0) >> 4)
 #define MP3_HDR_SAMPLE_RATE(_h) ((_h[2] & 0x0C) >> 2)
+
 
 /* Bit Rate Table
  * 
@@ -129,6 +132,7 @@ static const int bitrate_table[][5] = {
     /* 1111 */ {-1,  -1,  -1,  -1,  -1},
 };
 
+
 /* Sample rate table
  *
  * Row: index from header
@@ -150,6 +154,7 @@ typedef struct _tag
     unsigned int size;
 } id3_tag_t;
 
+
 #define ID3_HDR_EXTENDED(_h) ((_h[2] & 0x40) >> 4)
 #define ID3_HDR_FOOTER(_h)   ((_h[2] & 0x10) >> 4)
 #define ID3_HDR_SIZE(_h)  \
@@ -161,21 +166,18 @@ typedef struct _tag
  */
 
 /* Handle the fname as a directory or single mp3 file that data from 'datasrc'
- * file is to be injected into */ 
+ * file is to be injected into
+ */ 
 extern void handle_as_insert(
     const char *f_or_dir_name,
     flags_t     flags,
     const char *datasrc);
 
 /* Handle the name as a mp3 file */
-extern void handle_as_file(
-    const char *fname,
-    flags_t     flags);
+extern void handle_as_file(const char *fname, flags_t flags);
 
 /* Only scan the incoming data for OOB info */
-extern void handle_as_stream(
-    const char *url,
-    flags_t    flags);
+extern void handle_as_stream(const char *url, flags_t flags);
 
 
 #endif /* MAIN_H_INCLUDE */

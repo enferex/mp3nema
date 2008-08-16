@@ -185,8 +185,9 @@ STREAM_OBJECT util_next_mp3_frame_or_id3v2(
             break;
         }
 
-        /* ID3v1 tag */
-        else if ((v[0] == 'T') && (v[1] == 'A') && (v[2] == 'G'))
+        /* ID3v1 tag (not from a stream) */
+        else if (fp && (v[0] == 'T') && (v[1] == 'A') && (v[2] == 'G') &&
+                 (start == (end - 128)))
         {
             fseek(fp, 128 - 3, SEEK_CUR);
             continue;

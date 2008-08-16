@@ -208,11 +208,13 @@ static int get_stream_info(flags_t flags, int sd, const hostdata_t *host)
 {
     static const int buf_blk_sz = DEFAULT_BLK_SZ;
 
-    int         total_sz, recv_sz, n_buf_blks;
-    char       *buf, *c, query[DEFAULT_BLK_SZ];
-    char        data[DEFAULT_BLK_SZ];
-    FILE       *fp;
-    hostdata_t  newhost;
+    int            ret, redirected, total_sz, recv_sz, n_buf_blks;
+    char          *buf, *c, query[DEFAULT_BLK_SZ];
+    char           data[DEFAULT_BLK_SZ];
+    FILE          *fp;
+    fd_set         readfds;
+    hostdata_t     newhost;
+    struct timeval tv;
 
     snprintf(query, sizeof(query), 
              "GET %s HTTP/1.0\r\nHost: %s:%s\r\n\r\n",
@@ -230,50 +232,77 @@ static int get_stream_info(flags_t flags, int sd, const hostdata_t *host)
     total_sz = 0;
     n_buf_blks = 0;
     buf = NULL;
+    redirected = 0;
 
-    while ((recv_sz = read(sd, data, sizeof(data))) > 0 )
+    FD_ZERO(&readfds);
+    FD_SET(sd, &readfds);
+    memset(&tv, 0, sizeof(struct timeval));
+    tv.tv_sec = 3;
+
+    while ( 1 )
     {
-        if ((recv_sz + total_sz) >= (n_buf_blks * buf_blk_sz))
-          buf = realloc(buf, (++n_buf_blks) * buf_blk_sz);
+        ret = select(sd+1, &readfds, NULL, NULL, &tv);
+        if (ret == -1)
+        {
+            ERR("Could not establish connection to remote host\n");
+            break;
+        }
+        else if (!ret)
+          break;
+        
+        /* Socket is ready ... */
+        if ((recv_sz = read(sd, data, sizeof(data))) > 0 )
+        {
+            if ((recv_sz + total_sz) >= (n_buf_blks * buf_blk_sz))
+              buf = realloc(buf, (++n_buf_blks) * buf_blk_sz);
 
-        memcpy(buf + total_sz, data, recv_sz);
-        total_sz += recv_sz;
+            memcpy(buf + total_sz, data, recv_sz);
+            total_sz += recv_sz;
+
+            if ((total_sz > 4) && (strncmp(buf, "HTTP", 4) == 0))
+              redirected = 1;
+        }
+
+        if (recv_sz == 0 || !redirected)
+          break;
     }
 
     /* Get the potential new host from the just read in data */
-    if (buf && !(c = strstr(buf, "http://")))
+    if (redirected && buf && !(c = strstr(buf, "http://")))
     {
         free(buf);
         return 0;
     }
-    else if (buf)
+    else if (redirected && buf)
     {
         strtok(c, "\n");
         util_url_to_host_port_file(c, &newhost);
     }
 
-    /* Disconnect here and contact server in m3u/pls */
     free(buf);
-    close(sd);
-    if (!(sd = connect_host(newhost.host, newhost.portnum)))
-      return 0;
 
-    /* Get data from new host */
-    snprintf(query, sizeof(query),
-             "GET %s HTTP/1.0\r\nHost: %s:%s\r\n\r\n",
-             newhost.file, newhost.host, newhost.port);
+    /* Disconnect here and contact server in m3u/pls */
+    if (redirected)
+    {
+        close(sd);
+        if (!(sd = connect_host(newhost.host, newhost.portnum)))
+          return 0;
 
+        /* Get data from new host */
+        snprintf(query, sizeof(query),
+                 "GET %s HTTP/1.0\r\nHost: %s:%s\r\n\r\n",
+                 newhost.file, newhost.host, newhost.port);
 #ifdef DEBUG
-        printf("query: %s", query);
+            printf("query: %s", query);
 #endif
-
-    free(newhost.file);
-    free(newhost.host);
-    free(newhost.port);
-
-    /* Query */
-    if (write(sd, query, strlen(query)) < 1)
-      return 0;
+        free(newhost.file);
+        free(newhost.host);
+        free(newhost.port);
+    
+        /* Query */
+        if (write(sd, query, strlen(query)) < 1)
+          return 0;
+    }
 
     /* Create file to capture stream to */
     if ((flags & FLAG_CAPTURE_MODE) &&

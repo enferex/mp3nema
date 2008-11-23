@@ -1,5 +1,14 @@
--- Version 0.01 --
+-- Version 0.2 --
+2008-11-23 Matt Davis <mattdavis9@gmail.com>
 
+* main.c: Added wording to usage statement
+* main.h: Up'd the version number
+* utils.c: Flush out of band data file pointer when saving out of band data
+* utils.c: Always save oob data, even if its just HTTP header info, by ignoring
+the ignore flag
+
+
+-- Version 0.1 --
 2008-08-16 Matt Davis <mattdavis9@gmail.com>
 
 * Initial public release 

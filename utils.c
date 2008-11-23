@@ -141,7 +141,7 @@ STREAM_OBJECT util_next_mp3_frame_or_id3v2(
     /* Start OOB data catch fresh */
     oob = NULL;
     n_blks = 0;
-   
+
     /* Start/end positions for file or indecies into data */ 
     if (fp)
     {
@@ -222,8 +222,11 @@ STREAM_OBJECT util_next_mp3_frame_or_id3v2(
       printf(TAG " %d bytes out-of-frame\n", oob_size);
 
     /* Write OOB data to file */
-    if (oob_size && !ignore_oob && oob_to_file)
-      fwrite(oob, 1, oob_size, oob_to_file);
+    if (oob_size && oob_to_file)
+    {
+        fwrite(oob, oob_size, 1, oob_to_file);
+        fflush(oob_to_file);
+    }
    
     if (fp)
       fseek(fp, start, SEEK_SET);

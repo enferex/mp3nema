@@ -37,10 +37,11 @@ void usage(void)
            "under certain conditions.  For details see the file 'LICENSE'\n"
            "that came with this software or visit:\n"
            "<http://www.gnu.org/licenses/gpl-3.0.txt>\n\n"
-           "-- MP3nema v" VERSION " -- An MP3 analysis, data capturing, "
-           "and data hiding utility\n");
+           "-- MP3nema v" VERSION " --\n"
+           "An MP3 analysis, data capturing, and data hiding utility\n");
 
-    printf("Usage: ./mp3nema <source.mp3 | stream> [[-e] | [-i file]]\n"
+    printf("Usage: ./mp3nema <source.mp3 | stream> "
+           "[-c] [[-e] | [-i file]] [-v]\n"
            "\t-c Capture audio from network stream\n"
            "\t-i <file> Inject data from 'file' into the mp3 between frames\n"
            "\t-e Extract out of band data to a file\n"

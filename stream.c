@@ -116,7 +116,7 @@ static void suck_data_from_stream(
         /* Once buffer is full analyize all frames */
         if (curr_brain_sz + recv_sz >= brain_sz)
         {
-            while ( 1 )
+            for ( ;; )
             {
                 type = util_next_mp3_frame_or_id3v2(NULL, brain, curr_brain_sz,
                                                     ignore_oob, &index,
@@ -239,7 +239,7 @@ static int get_stream_info(flags_t flags, int sd, const hostdata_t *host)
     memset(&tv, 0, sizeof(struct timeval));
     tv.tv_sec = 3;
 
-    while ( 1 )
+    for ( ;; )
     {
         ret = select(sd+1, &readfds, NULL, NULL, &tv);
         if (ret == -1)

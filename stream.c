@@ -3,7 +3,7 @@
  *
  * mp3nema - MP3 analysis and data hiding utility
  *
- * Copyright (C) 2008 Matt Davis (enferex) of 757Labs (www.757labs.com)
+ * Copyright (C) 2009 Matt Davis (enferex) of 757Labs (www.757labs.com)
  *
  * stream.c is part of mp3nema.
  * mp3nema is free software: you can redistribute it and/or modify

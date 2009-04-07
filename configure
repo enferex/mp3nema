@@ -3547,7 +3547,10 @@ done
 
 
 
-for ac_header in netdb.h stdlib.h string.h sys/socket.h unistd.h dirent.h
+
+
+for ac_header in netdb.h stdlib.h string.h sys/socket.h unistd.h dirent.h \
+                  arpa/inet.h netinet/in.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
 if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then

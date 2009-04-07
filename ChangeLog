@@ -1,3 +1,11 @@
+-- Version 0.3 --
+2009-04-07 Matt Davis <mattdavis9@gmail.com>
+
+* main.c: Include stdlib.h
+* stream.c: Include arpa/inet.h and netinet/in.h
+* configure.ac: Check for arpa/inet.h and netinet/in.h
+
+
 -- Version 0.2 --
 2008-11-23 Matt Davis <mattdavis9@gmail.com>
 

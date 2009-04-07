@@ -12,7 +12,8 @@ AC_LANG_C
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_HEADER_TIME
-AC_CHECK_HEADERS([netdb.h stdlib.h string.h sys/socket.h unistd.h dirent.h])
+AC_CHECK_HEADERS([netdb.h stdlib.h string.h sys/socket.h unistd.h dirent.h \
+                  arpa/inet.h netinet/in.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

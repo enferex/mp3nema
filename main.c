@@ -31,7 +31,7 @@ flags_t main_flags = 0;
 
 void usage(void)
 {
-    printf(NAME " Copyright (C) 2008 Matt Davis\n"
+    printf(NAME " Copyright (C) 2009 Matt Davis\n"
            "(enferex) of 757Labs (www.757labs.com)\n"
            "This program comes with ABSOLUTELY NO WARRANTY\n"
            "This is free software, and you are welcome to redistribute it\n"

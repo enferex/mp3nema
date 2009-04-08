@@ -1,3 +1,10 @@
+-- Version 0.4 --
+2009-04-07 Matt Davis <mattdavis9@gmail.com>
+
+* main.c: Use a more portable form of exit()
+* stream.c: Use a more portable form of exit()
+
+
 -- Version 0.3 --
 2009-04-07 Matt Davis <mattdavis9@gmail.com>
 

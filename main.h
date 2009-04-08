@@ -35,7 +35,7 @@
 
 /* Version */
 #define _VER(_major, _minor) #_major"."#_minor
-#define VERSION _VER(0, 3) /* Major, Minor */
+#define VERSION _VER(0, 4) /* Major, Minor */
 
 /* Main Argument Flags */
 #define FLAG_INSERT_MODE  1

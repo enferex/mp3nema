@@ -48,7 +48,7 @@ void usage(void)
            "\t-e Extract out of band data to a file\n"
            "\t-v Display more information (out-of-frame data)\n");
 
-    _Exit(0);
+    exit(0);
 }
 
 

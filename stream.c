@@ -59,7 +59,7 @@ static void signal_handler(int signum)
     printf("\n" TAG " session gracefully terminated\n");
     fflush(stdout);
 
-    _Exit(0);
+    exit(0);
 }
 
 
